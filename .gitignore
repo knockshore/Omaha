@@ -1,0 +1,97 @@
+# Visual Studio / .NET Core / Mono gitignore
+# https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-gitignore
+
+# Build output
+bin/
+obj/
+out/
+artifacts/
+publish/
+*.BuildOutput/
+*.build/
+*.vsix
+*.nupkg
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+packages.lock.json
+.nuget/
+.nuget/packages/
+
+# ASP.NET / IIS
+wwwroot/node_modules/
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+secrets/
+iisexpress/
+ssl/
+
+# Test results / coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+coverage.opencover.xml
+*.trx
+
+# Logs
+*.log
+logs/
+
+# Publish / deployment
+publish/
+deploy/
+*.publishsettings
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Rider, ReSharper and JetBrains Rider caches
+_ReSharper*/
+*.ReSharper
+.idea/
+*.DotSettings.user
+
+# Azure Functions
+.local.settings.json
+
+# Entity Framework
+*.db
+*.db-shm
+*.db-wal
+*.sprockets
+
+# Tooling
+.vsconfig
+dotCover.xml
+*.dotCover
+coverage.*
+testresults/
+
+# Misc
+*.pid
+*.seed
+
+dist/*
+x64/*
+deps/*
+
+QtWeb/*
