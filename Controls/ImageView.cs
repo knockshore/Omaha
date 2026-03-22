@@ -11,10 +11,45 @@ public class ImageView : Control
     private SKBitmap? _bitmap;
     private float _zoom = 1.0f;
 
+    /// <summary>
+    /// Fired whenever Zoom changes (user-driven or via code).
+    /// The argument is the new zoom factor.
+    /// </summary>
+    public event Action<float>? ZoomChanged;
+
+    /// <summary>
+    /// True once the user has manually zoomed, suppressing automatic fit-to-width.
+    /// </summary>
+    public bool IsUserZoomed { get; set; }
+
     public float Zoom
     {
         get => _zoom;
-        set { _zoom = Math.Clamp(value, 0.1f, 10f); Invalidate(); }
+        set
+        {
+            var clamped = Math.Clamp(value, 0.1f, 10f);
+            if (Math.Abs(clamped - _zoom) > 0.0005f)
+            {
+                _zoom = clamped;
+                Invalidate();
+                ZoomChanged?.Invoke(_zoom);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Set zoom so the image width fills <paramref name="viewportWidth"/> exactly.
+    /// Does NOT set IsUserZoomed and does NOT fire ZoomChanged — this is
+    /// called automatically by the layout system on every frame.
+    /// </summary>
+    public void FitToWidth(float viewportWidth)
+    {
+        if (_bitmap == null || viewportWidth <= 0) return;
+        float newZoom = Math.Clamp(viewportWidth / _bitmap.Width, 0.05f, 10f);
+        if (Math.Abs(newZoom - _zoom) > 0.0005f)
+            _zoom = newZoom;
+        // No Invalidate() needed — we are called from inside a layout pass;
+        // the render that follows will pick up the updated zoom.
     }
 
     /// <summary>
@@ -92,12 +127,26 @@ public class ImageView : Control
     /// </summary>
     public float ImageHeight => (_bitmap?.Height ?? 0) * _zoom;
 
+    /// <summary>
+    /// Override Measure to report zoom-aware dimensions so the parent ScrollArea
+    /// knows the real content size and shows scrollbars when the image is larger
+    /// than the viewport.
+    /// </summary>
+    public override SKSize Measure(float availableWidth, float availableHeight)
+    {
+        if (_bitmap == null) return base.Measure(availableWidth, availableHeight);
+        return new SKSize(
+            Math.Max(MinWidth, _bitmap.Width  * _zoom),
+            Math.Max(MinHeight, _bitmap.Height * _zoom));
+    }
+
     public override void Render(SKCanvas canvas)
     {
         if (!IsVisible) return;
 
         canvas.Save();
-        canvas.Translate(X, Y);
+        // Snap to whole pixels to avoid sub-pixel blur on fine PDF text.
+        canvas.Translate(MathF.Round(X), MathF.Round(Y));
         canvas.ClipRect(LocalBounds);
 
         // Background
@@ -107,11 +156,17 @@ public class ImageView : Control
         if (_bitmap != null)
         {
             // Draw image with zoom
-            var destRect = new SKRect(0, 0, ImageWidth, ImageHeight);
+            var destRect = new SKRect(
+                0,
+                0,
+                MathF.Round(ImageWidth),
+                MathF.Round(ImageHeight));
+
+            bool isNearNativeScale = MathF.Abs(_zoom - 1.0f) < 0.01f;
             using var imgPaint = new SKPaint
             {
-                FilterQuality = SKFilterQuality.High,
-                IsAntialias = true
+                FilterQuality = isNearNativeScale ? SKFilterQuality.None : SKFilterQuality.High,
+                IsAntialias = false
             };
             canvas.DrawBitmap(_bitmap, destRect, imgPaint);
         }

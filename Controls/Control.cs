@@ -45,14 +45,29 @@ public abstract class Control
     public Control? Parent { get; internal set; }
 
     /// <summary>
-    /// Absolute X position (accounting for parent offsets).
+    /// Absolute X position on screen, accounting for parent offsets and any
+    /// scroll offsets applied by parent scrollable containers.
     /// </summary>
-    public float AbsoluteX => X + (Parent?.AbsoluteX ?? 0);
+    public float AbsoluteX => X + (Parent?.ChildAbsoluteX ?? 0);
 
     /// <summary>
-    /// Absolute Y position (accounting for parent offsets).
+    /// Absolute Y position on screen, accounting for parent offsets and any
+    /// scroll offsets applied by parent scrollable containers.
     /// </summary>
-    public float AbsoluteY => Y + (Parent?.AbsoluteY ?? 0);
+    public float AbsoluteY => Y + (Parent?.ChildAbsoluteY ?? 0);
+
+    /// <summary>
+    /// The screen X coordinate at which this container places its children.
+    /// For plain containers this equals <see cref="AbsoluteX"/>.
+    /// Scrollable containers override this to subtract their scroll offset so
+    /// that children's <see cref="AbsoluteX"/> reflects their actual visual position.
+    /// </summary>
+    public virtual float ChildAbsoluteX => AbsoluteX;
+
+    /// <summary>
+    /// The screen Y coordinate at which this container places its children.
+    /// </summary>
+    public virtual float ChildAbsoluteY => AbsoluteY;
 
     /// <summary>
     /// Bounding rectangle in absolute coordinates.
@@ -110,16 +125,20 @@ public abstract class Control
     protected virtual void OnClick(MouseButtonEvent evt) { }
 
     /// <summary>
-    /// Request a visual redraw.
+    /// Request a visual redraw.  Bubbles up the parent chain so the root
+    /// container (wired to the window) can set the redraw flag.
     /// </summary>
     public void Invalidate()
     {
-        // Walk up to root window to trigger repaint
-        InvalidateRequested?.Invoke();
+        if (Parent != null)
+            Parent.Invalidate();
+        else
+            InvalidateRequested?.Invoke();
     }
 
     /// <summary>
-    /// Event fired when the control needs repainting.
+    /// Event fired when the root control needs repainting.  Only the root
+    /// (parentless) control fires this; all others bubble via <see cref="Invalidate"/>.
     /// </summary>
     public event Action? InvalidateRequested;
 

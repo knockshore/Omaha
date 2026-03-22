@@ -153,6 +153,26 @@ public class ListView : Control
         canvas.Restore();
     }
 
+    /// <summary>
+    /// Reports the natural content height (all items stacked) so that a parent
+    /// <see cref="ScrollArea"/> allocates enough virtual space for every row.
+    /// The ListView still handles its own internal scroll when the allocated
+    /// height is constrained by a fixed-size parent.
+    /// </summary>
+    public override SKSize Measure(float availableWidth, float availableHeight)
+    {
+        float naturalH = Math.Max(MinHeight, _items.Count * _itemHeight);
+        // When placed directly inside a ScrollArea the available height is
+        // float.MaxValue — return the true content height so the scroll area
+        // sizes the virtual canvas correctly.
+        if (availableHeight >= float.MaxValue / 2)
+            return new SKSize(availableWidth, naturalH);
+
+        // Inside a fixed-height container honour the constraint but never go
+        // below MinHeight.
+        return new SKSize(availableWidth, Math.Max(MinHeight, Math.Min(naturalH, availableHeight)));
+    }
+
     public override bool HandleEvent(OmahaEvent evt)
     {
         if (!IsVisible || !IsEnabled) return false;

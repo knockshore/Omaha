@@ -36,6 +36,7 @@ public class MouseScrollEvent : OmahaEvent
     public float Y { get; init; }
     public float DeltaX { get; init; }
     public float DeltaY { get; init; }
+    public bool Ctrl { get; init; }
 }
 
 public class KeyEvent : OmahaEvent
